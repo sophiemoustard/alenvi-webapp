@@ -18,7 +18,7 @@
         required-field in-modal />
     </template>
     <template slot="footer">
-      <q-btn class="modal-btn full-width" color="primary" no-caps label="Supprimer les interventions"
+      <q-btn class="modal-btn full-width" color="primary" no-caps :loading="loading" label="Supprimer les interventions"
         @click="validateEventsDeletion" icon-right="clear" />
     </template>
   </ni-modal>
@@ -63,6 +63,7 @@ export default {
         { label: 'Entre deux dates', value: true },
         { label: 'A partir d\'une date', value: false },
       ],
+      loading: false,
     };
   },
   methods: {
@@ -85,6 +86,7 @@ export default {
     },
     async deleteEvents () {
       try {
+        this.loading = true;
         const isValid = await this.waitForFormValidation(this.$v.deletedEvents);
         if (!isValid) return NotifyNegative('Champ(s) invalide(s)');
         await Events.deleteList(omit(this.deletedEvents, 'inRange'));
@@ -92,10 +94,10 @@ export default {
         NotifyPositive('Les évènements ont bien étés supprimés');
       } catch (e) {
         console.error(e);
-        if (e.status === 409) {
-          return NotifyNegative('Vous n\'avez pas le droit de supprimer au moins l\'un des évènements.');
-        }
+        if (e.status === 409) return NotifyNegative(e.data.message);
         NotifyNegative('Problème lors de la suppression.');
+      } finally {
+        this.loading = false;
       }
     },
   },

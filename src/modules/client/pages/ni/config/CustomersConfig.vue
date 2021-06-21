@@ -481,6 +481,13 @@ export default {
           },
         },
         {
+          name: 'teletransmissionId',
+          label: 'ID de télétransmission',
+          field: 'teletransmissionId',
+          align: 'center',
+          style: !this.$q.platform.is.mobile && 'word-break: break-word;',
+        },
+        {
           name: 'isApa',
           label: 'APA',
           field: 'isApa',
@@ -505,6 +512,7 @@ export default {
         unitTTCRate: 0,
         billingMode: '',
         isApa: false,
+        teletransmissionId: '',
       },
       billingModeOptions: [
         { label: 'Indirecte', value: BILLING_INDIRECT },
@@ -971,7 +979,10 @@ export default {
       const currentThirdPartyPayer = this.thirdPartyPayers.find(tpp => tpp._id === tppId);
       this.editedThirdPartyPayer = {
         address: {},
-        ...pick(currentThirdPartyPayer, ['_id', 'name', 'address', 'email', 'unitTTCRate', 'billingMode', 'isApa']),
+        ...pick(
+          currentThirdPartyPayer,
+          ['_id', 'name', 'address', 'email', 'unitTTCRate', 'billingMode', 'isApa', 'teletransmissionId']
+        ),
       };
     },
     resetThirdPartyPayerCreation () {
@@ -983,6 +994,7 @@ export default {
         unitTTCRate: 0,
         billingMode: '',
         isApa: false,
+        teletransmissionId: '',
       };
     },
     formatThirdPartyPayerPayload (tpp) {

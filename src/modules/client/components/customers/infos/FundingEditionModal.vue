@@ -3,6 +3,9 @@
       <template slot="title">
         Éditer le <span class="text-weight-bold">financement</span>
       </template>
+      <ni-input in-modal v-if="needFundingPlanIdForEditedFunding" :value="editedFunding.fundingPlanId"
+        caption="ID du plan de financement" @input="update($event, 'fundingPlanId')" required-field
+        :error="validations.fundingPlanId.$error" @blur="validations.fundingPlanId.$touch" />
       <ni-date-input :value="editedFunding.startDate" caption="Date de début de prise en charge"
         :max="editedFundingMaxStartDate" class="last" in-modal @blur="validations.startDate.$touch"
         :error="validations.startDate.$error" required-field @input="update($event, 'startDate')" />
@@ -54,6 +57,7 @@ export default {
     amountTtcErrorMessage: { type: String, default: '' },
     unitTtcRateErrorMessage: { type: String, default: '' },
     customerParticipationRateErrorMessage: { type: String, default: '' },
+    needFundingPlanIdForEditedFunding: { type: Boolean, default: false },
   },
   components: {
     'ni-input': Input,

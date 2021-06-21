@@ -272,7 +272,8 @@
       :amount-ttc-error-message="amountTTCErrorMessage($v.newFunding)" :validations="$v.newFunding"
       :unit-ttc-rate-error-message="unitTTCRateErrorMessage($v.newFunding)" :days-options="daysOptions"
       :funding-subscriptions-options="fundingSubscriptionsOptions" @hide="resetCreationFundingData"
-      :customer-participation-rate-error-message="customerParticipationRateErrorMessage($v.newFunding)" />
+      :customer-participation-rate-error-message="customerParticipationRateErrorMessage($v.newFunding)"
+      :need-funding-plan-id-for-new-funding="needFundingPlanIdForNewFunding" />
 
     <!-- Funding edition modal -->
     <funding-edition-modal v-model="fundingEditionModal" :loading="loading" @hide="resetEditionFundingData"
@@ -280,13 +281,14 @@
       :validations="$v.editedFunding" :care-hours-error-message="careHoursErrorMessage($v.editedFunding)"
       :amount-ttc-error-message="amountTTCErrorMessage($v.editedFunding)"
       :unit-ttc-rate-error-message="unitTTCRateErrorMessage($v.editedFunding)"
-      :customer-participation-rate-error-message="customerParticipationRateErrorMessage($v.editedFunding)" />
+      :customer-participation-rate-error-message="customerParticipationRateErrorMessage($v.editedFunding)"
+      :need-funding-plan-id-for-edited-funding="needFundingPlanIdForEditedFunding" />
 </div>
 </template>
 
 <script>
 import { mapState } from 'vuex';
-import { required, requiredIf, minValue, maxValue } from 'vuelidate/lib/validators';
+import { required, requiredIf, minValue } from 'vuelidate/lib/validators';
 import get from 'lodash/get';
 import pick from 'lodash/pick';
 import pickBy from 'lodash/pickBy';
@@ -420,6 +422,7 @@ export default {
         customerParticipationRate: 0,
         careDays: [0, 1, 2, 3, 4, 5, 6, 7],
         subscription: '',
+        fundingPlanId: '',
       },
       fundingCreationModal: false,
       fundingEditionModal: false,
@@ -489,6 +492,14 @@ export default {
     daysOptions () {
       return days.map((day, i) => ({ label: day !== 'Jours fériés' ? day.slice(0, 2) : day, value: i }));
     },
+    needFundingPlanIdForNewFunding () {
+      const thirdPartyPayer = this.ttpList.find(ttp => ttp._id === this.newFunding.thirdPartyPayer);
+
+      return !!get(thirdPartyPayer, 'teletransmissionId');
+    },
+    needFundingPlanIdForEditedFunding () {
+      return !!get(this.editedFunding, 'thirdPartyPayer.teletransmissionId');
+    },
   },
   validations () {
     return {
@@ -541,13 +552,19 @@ export default {
         nature: { required },
         frequency: { required },
         ...this.getFundingValidation(this.newFunding),
+        fundingPlanId: { required: requiredIf(() => this.needFundingPlanIdForNewFunding) },
+
       },
-      editedFunding: { ...this.getFundingValidation(this.editedFunding) },
+      editedFunding: {
+        ...this.getFundingValidation(this.editedFunding),
+        fundingPlanId: { required: requiredIf(() => this.needFundingPlanIdForEditedFunding) },
+      },
     };
   },
   watch: {
     'newFunding.thirdPartyPayer': function () {
       this.setUnitUTTRate();
+      if (!this.needFundingPlanIdForNewFunding) this.newFunding.fundingPlanId = '';
     },
     'newFunding.nature': function (newNature) {
       if (newNature === FIXED) this.newFunding.frequency = ONCE;
@@ -571,7 +588,7 @@ export default {
         customerParticipationRate: {
           required: requiredIf(item => item.nature === HOURLY),
           minValue: minValue(0),
-          maxValue: maxValue(100),
+          maxValue: value => value < 100,
         },
       };
     },
@@ -924,14 +941,15 @@ export default {
         customerParticipationRate: 0,
         careDays: [0, 1, 2, 3, 4, 5, 6, 7],
         subscription: '',
+        fundingPlanId: '',
       };
     },
     formatCreatedFunding () {
       const cleanPayload = pickBy(this.newFunding);
-      const { nature, thirdPartyPayer, subscription, frequency, ...version } = cleanPayload;
+      const { nature, thirdPartyPayer, subscription, frequency, fundingPlanId, ...version } = cleanPayload;
       if (version.endDate) version.endDate = moment(version.endDate).endOf('d').toDate();
 
-      return { nature, thirdPartyPayer, subscription, frequency, versions: [{ ...version }] };
+      return { nature, thirdPartyPayer, subscription, frequency, fundingPlanId, versions: [{ ...version }] };
     },
     async createFunding () {
       try {
@@ -991,7 +1009,14 @@ export default {
       this.$v.editedFunding.$reset();
     },
     formatFundingEditionPayload (funding) {
-      const pickedFields = ['folderNumber', 'careDays', 'customerParticipationRate', 'startDate', 'subscription'];
+      const pickedFields = [
+        'folderNumber',
+        'careDays',
+        'customerParticipationRate',
+        'startDate',
+        'subscription',
+        'fundingPlanId',
+      ];
       if (funding.nature === FIXED) pickedFields.push('amountTTC');
       else if (funding.nature === HOURLY) pickedFields.push('unitTTCRate', 'careHours');
       const payload = {

@@ -15,6 +15,8 @@
       <ni-select in-modal :value="editedThirdPartyPayer.billingMode" :options="billingModeOptions"
         caption="Facturation" :filter="false" required-field :error="validations.billingMode.$error"
         @blur="validations.billingMode.$touch" @input="update($event, 'billingMode')" />
+      <ni-input in-modal caption="ID de télétransmission" :value="editedThirdPartyPayer.teletransmissionId"
+        @input="update($event, 'teletransmissionId')" />
       <div class="row q-mb-md light-checkbox">
         <q-checkbox :value="editedThirdPartyPayer.isApa" label="Financement APA" @input="update($event, 'isApa')"
           dense />

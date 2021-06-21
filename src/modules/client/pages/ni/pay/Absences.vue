@@ -14,7 +14,7 @@
             :style="col.style">
             <template v-if="col.name === 'actions'">
               <div class="row no-wrap table-actions">
-                <q-btn flat round small color="grey" icon="edit" @click="openEditionModal(props.row)" />
+                <q-btn flat round small color="grey" icon="edit" @click="openAbsenceEditionModal(props.row)" />
               </div>
             </template>
             <template v-if="col.name === 'attachment'">
@@ -32,8 +32,9 @@
     <!-- Absence edition modal -->
     <ni-event-edition-modal :validations="$v.editedEvent" :loading="loading" :edited-event.sync="editedEvent"
       :edition-modal="editionModal" :person-key="personKey" :active-auxiliaries="activeAuxiliaries"
-      @reset="resetEditionForm" @delete-document="validateDocumentDeletion" @document-uploaded="documentUploaded"
-      @submit="updateEvent" @close="closeEditionModal" @delete-event="validateEventDeletion" />
+      @hide="resetEditionForm" @delete-document="validateDocumentDeletion" @document-uploaded="documentUploaded"
+      @submit="updateEvent" @close="closeEditionModal" @delete-event="validateEventDeletion"
+      :event-histories="editedEventHistories" :histories-loading="historiesLoading" />
   </q-page>
 </template>
 
@@ -43,7 +44,6 @@ import Events from '@api/Events';
 import DateRange from '@components/form/DateRange';
 import TitleHeader from '@components/TitleHeader';
 import SimpleTable from '@components/table/SimpleTable';
-import { NotifyWarning } from '@components/popup/notify';
 import { formatIdentity, formatHours, formatHoursWithMinutes } from '@helpers/utils';
 import moment from '@helpers/moment';
 import { formatDate } from '@helpers/date';
@@ -185,14 +185,9 @@ export default {
       }
     },
     // Event edition
-    openEditionModal (event) {
-      const isAllowed = this.canEditEvent({ auxiliaryId: get(event, 'auxiliary._id'), sectorId: event.sector });
-      if (!isAllowed) return NotifyWarning('Vous n\'avez pas les droits pour réaliser cette action');
-
+    async openAbsenceEditionModal (event) {
       this.selectedAuxiliary = event.auxiliary ? event.auxiliary : { picture: {}, identity: { lastname: '' } };
-      this.formatEditedEvent(event);
-
-      this.editionModal = true;
+      await this.openEditionModal(event);
     },
   },
 };

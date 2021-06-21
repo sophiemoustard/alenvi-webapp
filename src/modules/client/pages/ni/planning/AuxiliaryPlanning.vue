@@ -19,7 +19,8 @@
       :edition-modal="editionModal" :internal-hours="internalHours" :active-auxiliaries="activeAuxiliaries"
       :customers="customers" @hide="resetEditionForm" @delete-document="validateDocumentDeletion"
       @document-uploaded="documentUploaded" @close="closeEditionModal" @delete-event="validateEventDeletion"
-      @delete-event-repetition="validationDeletionEventRepetition" :person-key="personKey" @submit="updateEvent" />
+      @delete-event-repetition="validationDeletionEventRepetition" :person-key="personKey" @submit="updateEvent"
+      :event-histories="editedEventHistories" :histories-loading="historiesLoading" />
   </q-page>
 </template>
 

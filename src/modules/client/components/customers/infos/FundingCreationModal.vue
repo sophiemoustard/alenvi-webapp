@@ -6,6 +6,9 @@
       <ni-select in-modal caption="Tiers payeur" :options="fundingTppOptions" :value="newFunding.thirdPartyPayer"
         :error="validations.thirdPartyPayer.$error" @blur="validations.thirdPartyPayer.$touch" required-field
         @input="update($event, 'thirdPartyPayer')" />
+        <ni-input in-modal v-if="needFundingPlanIdForNewFunding" :value="newFunding.fundingPlanId"
+        caption="ID du plan de financement" @input="update($event, 'fundingPlanId')" required-field
+        :error="validations.fundingPlanId.$error" @blur="validations.fundingPlanId.$touch" />
       <ni-select in-modal :value="newFunding.subscription" :options="fundingSubscriptionsOptions"
         caption="Souscription" @blur="validations.subscription.$touch" :error="validations.subscription.$error"
         required-field @input="update($event, 'subscription')" />
@@ -69,6 +72,7 @@ export default {
     amountTtcErrorMessage: { type: String, default: '' },
     unitTtcRateErrorMessage: { type: String, default: '' },
     customerParticipationRateErrorMessage: { type: String, default: '' },
+    needFundingPlanIdForNewFunding: { type: Boolean, default: false },
   },
   components: {
     'ni-input': Input,

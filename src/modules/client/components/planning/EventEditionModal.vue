@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-if="Object.keys(editedEvent).length !== 0" :value="editionModal" @hide="hide">
+  <q-dialog :value="editionModal" @hide="hide">
     <div class="modal-container-md">
       <div class="modal-padding">
         <ni-planning-modal-header v-if="isCustomerPlanning" :value="editedEvent.customer"
@@ -8,42 +8,45 @@
           :value="editedEvent.auxiliary" :selected-person="selectedAuxiliary" @close="close" />
         <ni-planning-modal-header v-else :value="editedEvent.auxiliary" @input="update($event, 'auxiliary')"
           :options="auxiliariesOptions" :selected-person="selectedAuxiliary" @close="close"
-          :disable="isEventTimeStamped" />
+          :disable="isEventTimeStamped || historiesLoading" />
         <div class="modal-subtitle">
           <q-btn-toggle no-wrap :value="editedEvent.type" toggle-color="primary" rounded unelevated
             :options="eventType" />
           <q-btn icon="delete" @click="isRepetition(editedEvent) ? deleteEventRepetition() : deleteEvent()" no-caps flat
-            color="grey" v-if="!isBilledIntervention" data-cy="event-deletion-button" />
+            color="grey" v-if="!isBilledIntervention" data-cy="event-deletion-button" :disable="historiesLoading" />
         </div>
         <template v-if="editedEvent.type !== ABSENCE">
           <ni-datetime-range caption="Dates et heures de l'évènement" :value="editedEvent.dates" required-field
-            :disable="isBilledIntervention" :error="validations.dates.$error" @input="update($event, 'dates')"
-            @blur="validations.dates.$touch" :disable-start-date="isEventTimeStamped" :max="customerStoppedDate"
-            disable-end-date :disable-start-hour="!!editedEvent.startDateTimeStampedCount"
-            :disable-end-hour="!!editedEvent.endDateTimeStampedCount" />
+            :disable="isBilledIntervention || historiesLoading" :error="validations.dates.$error" disable-end-date
+            @input="update($event, 'dates')" @blur="validations.dates.$touch" :disable-start-date="isEventTimeStamped"
+            :max="customerStoppedDate" :disable-start-hour="!!startDateTimeStamped"
+            :disable-end-hour="!!endDateTimeStamped" />
         </template>
         <template v-if="editedEvent.type === INTERVENTION">
           <ni-select v-if="isCustomerPlanning" in-modal caption="Auxiliaire" :value="editedEvent.auxiliary"
             :options="auxiliariesOptions" :error="validations.auxiliary.$error" required-field
-            @blur="validations.auxiliary.$touch" @input="update($event, 'auxiliary')" />
+            @blur="validations.auxiliary.$touch" @input="update($event, 'auxiliary')"
+            :disable="isEventTimeStamped || historiesLoading" />
           <ni-select v-else in-modal caption="Bénéficiaire" :value="editedEvent.customer"
             :options="getCustomersOptions(editedEvent.dates.startDate)" :error="validations.customer.$error"
             required-field disable />
           <ni-select in-modal :options="customerSubscriptionsOptions" @input="update($event, 'subscription')"
             :value="editedEvent.subscription" :error="validations.subscription.$error" caption="Service"
-            @blur="validations.subscription.$touch" required-field :disable="isBilledIntervention" />
+            @blur="validations.subscription.$touch" required-field
+            :disable="isBilledIntervention || historiesLoading" />
         </template>
         <template v-if="editedEvent.type === INTERNAL_HOUR">
           <ni-select in-modal caption="Type d'heure interne" :value="editedEvent.internalHour"
-            :options="internalHourOptions" :error="validations.internalHour.$error"
+            :options="internalHourOptions" :error="validations.internalHour.$error" :disable="historiesLoading"
             @blur="validations.internalHour.$touch" @input="update($event, 'internalHour')" />
           <ni-search-address :value="editedEvent.address" in-modal @blur="validations.address.$touch"
-            :error="validations.address.$error" :error-message="addressError" @input="update($event, 'address')" />
+            :error="validations.address.$error" :error-message="addressError" @input="update($event, 'address')"
+            :disable="historiesLoading" />
         </template>
         <template v-if="isRepetition(editedEvent) && !isBilledIntervention && !editedEvent.isCancelled">
           <div class="row q-mb-md light-checkbox">
             <q-checkbox :value="editedEvent.shouldUpdateRepetition" label="Appliquer à la répétition"
-              @input="toggleRepetition" dense />
+              @input="toggleRepetition" dense :disable="historiesLoading" />
           </div>
         </template>
         <template v-if="editedEvent.type === ABSENCE">
@@ -52,32 +55,34 @@
             :error="validations.absenceNature.$error" required-field disable />
           <ni-select in-modal caption="Type d'absence" :value="editedEvent.absence" :options="absenceOptions"
             :error="validations.absence.$error" required-field @blur="validations.absence.$touch"
-            :disable="isHourlyAbsence(editedEvent)" @input="updateAbsence($event)" />
+            :disable="isHourlyAbsence(editedEvent) || historiesLoading" @input="updateAbsence($event)" />
           <ni-datetime-range caption="Dates et heures de l'évènement" :value="editedEvent.dates" required-field
             :disable-end-date="isHourlyAbsence(editedEvent)" :error="validations.dates.$error"
-            @blur="validations.dates.$touch" :disable-end-hour="isDailyAbsence(editedEvent)"
+            @blur="validations.dates.$touch" :disable-end-hour="isDailyAbsence(editedEvent)" :disable="historiesLoading"
             :disable-start-hour="!isIllnessOrWorkAccident(editedEvent)" @input="update($event, 'dates')" />
           <ni-file-uploader v-if="isIllnessOrWorkAccident(editedEvent)" caption="Justificatif d'absence" required-field
             path="attachment" :entity="editedEvent" alt="justificatif absence" name="file" :url="docsUploadUrl"
-            @uploaded="documentUploaded" :additional-value="additionalValue" :disable="!selectedAuxiliary._id"
-            :error="validations.attachment.$error" @delete="deleteDocument(editedEvent.attachment.driveId)" in-modal
-            :extensions="extensions" drive-storage />
+            @uploaded="documentUploaded" :additional-value="additionalValue" :error="validations.attachment.$error"
+            :disable="!selectedAuxiliary._id || historiesLoading" in-modal :extensions="extensions" drive-storage
+            @delete="deleteDocument(editedEvent.attachment.driveId)" />
         </template>
         <ni-input in-modal v-if="!editedEvent.shouldUpdateRepetition" :value="editedEvent.misc" caption="Notes"
-          :disable="isBilledIntervention" @blur="validations.misc.$touch" :error="validations.misc.$error"
-          :required-field="isMiscRequired" @input="update($event, 'misc')" />
+          :disable="isBilledIntervention || historiesLoading" @blur="validations.misc.$touch"
+          :error="validations.misc.$error" :required-field="isMiscRequired" @input="update($event, 'misc')" />
         <template v-if="canCancel">
           <div class="row q-mb-md light-checkbox">
-            <q-checkbox :value="editedEvent.isCancelled" label="Annuler l'évènement" dense
+            <q-checkbox :value="editedEvent.isCancelled" label="Annuler l'évènement" dense :disable="historiesLoading"
             @input="toggleCancellationForm($event)" />
           </div>
           <div class="row justify-between">
             <ni-select in-modal v-if="editedEvent.isCancelled" :value="editedEvent.cancel.condition" required-field
               caption="Conditions" :options="cancellationConditions" @blur="validations.cancel.condition.$touch"
-              :error="validations.cancel.condition.$error" @input="update($event, 'cancel.condition')" />
+              :error="validations.cancel.condition.$error" @input="update($event, 'cancel.condition')"
+              :disable="historiesLoading" />
             <ni-select in-modal v-if="editedEvent.isCancelled" :value="editedEvent.cancel.reason" caption="Motif"
               :options="cancellationReasons" required-field @blur="validations.cancel.reason.$touch"
-              :error="validations.cancel.reason.$error" @input="update($event, 'cancel.reason')" />
+              :error="validations.cancel.reason.$error" @input="update($event, 'cancel.reason')"
+              :disable="historiesLoading" />
           </div>
         </template>
         <div class="q-mb-lg">
@@ -86,10 +91,11 @@
               <q-icon size="sm" name="history" class="q-mr-sm" color="grey-400" />
               <div class="history-list-title text-weight-bold">Activité</div>
             </div>
-            <ni-button :label="historyButtonLabel" color="grey-800" class="bg-grey-100" @click="toggleHistory" />
+            <ni-button :label="historyButtonLabel" color="grey-800" class="bg-grey-100" @click="toggleHistory"
+              :disable="historiesLoading" />
           </div>
           <div v-if="displayHistory" class="q-mt-sm">
-            <ni-event-history v-for="history in editedEvent.histories" :key="history._id" :history="history" />
+            <ni-event-history v-for="history in eventHistories" :key="history._id" :history="history" />
           </div>
         </div>
       </div>
@@ -98,7 +104,7 @@
         <div class="row items-center no-wrap">
           <q-select borderless dense :value="editedEvent.address" @input="updateAddress" emit-value behavior="menu"
             :options="customerAddressList(editedEvent)" :readonly="customerAddressList(editedEvent).length === 1"
-            :display-value="editedEvent.address.fullAddress" ref="addressSelect">
+            :display-value="editedEvent.address.fullAddress" ref="addressSelect" :disable="historiesLoading">
             <template #append v-if="customerAddressList(editedEvent).length > 1">
               <ni-button icon="swap_vert" class="select-icon pink-icon" @click.stop="toggleAddressSelect" />
             </template>
@@ -107,7 +113,8 @@
         </div>
       </div>
       <q-btn v-if="!isBilledIntervention" class="modal-btn full-width" no-caps color="primary" :loading="loading"
-        label="Editer l'évènement" @click="submit" icon-right="check" data-cy="event-edition-button" />
+        label="Editer l'évènement" @click="submit" icon-right="check" data-cy="event-edition-button"
+        :disable="historiesLoading" />
     </div>
   </q-dialog>
 </template>
@@ -116,7 +123,7 @@
 import get from 'lodash/get';
 import set from 'lodash/set';
 import Button from '@components/Button';
-import { INTERVENTION, ABSENCE, OTHER, NEVER, ABSENCE_TYPES } from '@data/constants';
+import { INTERVENTION, ABSENCE, OTHER, NEVER, ABSENCE_TYPES, TIME_STAMPING_ACTIONS } from '@data/constants';
 import { formatIdentity } from '@helpers/utils';
 import moment from '@helpers/moment';
 import { planningModalMixin } from 'src/modules/client/mixins/planningModalMixin';
@@ -134,6 +141,8 @@ export default {
     internalHours: { type: Array, default: () => [] },
     validations: { type: Object, default: () => ({}) },
     personKey: { type: String, default: () => '' },
+    eventHistories: { type: Array, default: () => [] },
+    historiesLoading: { type: Boolean, default: false },
   },
   components: {
     'ni-button': Button,
@@ -169,8 +178,8 @@ export default {
       return this.editedEvent.type === INTERVENTION &&
       !this.editedEvent.shouldUpdateRepetition &&
       !this.isBilledIntervention &&
-      !this.editedEvent.startDateTimeStampedCount &&
-      !this.editedEvent.endDateTimeStampedCount;
+      !this.startDateTimeStamped &&
+      !this.endDateTimeStamped;
     },
     auxiliaryFilterPlaceholder () {
       return this.selectedAuxiliary.identity
@@ -189,8 +198,14 @@ export default {
     customerStoppedDate () {
       return get(this.selectedCustomer, 'stoppedAt') || '';
     },
+    startDateTimeStamped () {
+      return this.eventHistories.some(h => TIME_STAMPING_ACTIONS.includes(h.action) && h.update.startHour);
+    },
+    endDateTimeStamped () {
+      return this.eventHistories.some(h => TIME_STAMPING_ACTIONS.includes(h.action) && h.update.endHour);
+    },
     isEventTimeStamped () {
-      return !!this.editedEvent.startDateTimeStampedCount || !!this.editedEvent.endDateTimeStampedCount;
+      return !!this.startDateTimeStamped || !!this.endDateTimeStamped;
     },
   },
   methods: {

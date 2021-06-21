@@ -469,7 +469,7 @@ export const SUPPORT_STOPPING_REASONS_OPTIONS = [
   { label: 'Décès', value: 'death' },
   { label: 'Départ en EPHAD', value: 'ephad_departure' },
   { label: 'Amélioration de l\'état', value: 'condition_improvement' },
-  { label: 'Autre', value: 'Other' },
+  { label: 'Autre', value: 'other' },
 ];
 
 // TIMESTAMPING

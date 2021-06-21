@@ -151,7 +151,6 @@ export default {
   data () {
     return {
       terms: [],
-      loading: false,
       draggedObject: {},
       startOfWeek: moment().startOf('week').toISOString(),
       days: [],
