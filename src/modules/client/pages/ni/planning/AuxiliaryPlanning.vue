@@ -55,7 +55,7 @@ export default {
     return {
       loading: false,
       days: [],
-      events: [],
+      events: {},
       customers: [],
       auxiliaries: [],
       internalHours: [],
@@ -161,7 +161,7 @@ export default {
       if (!this.displayAllSectors) {
         this.auxiliaries = [];
         this.filteredSectors = [];
-        this.events = [];
+        this.events = {};
         this.$refs.planningManager.restoreFilter(this.savedSearch);
       } else {
         this.savedSearch = search;
@@ -208,7 +208,7 @@ export default {
         if (this.displayHistory) await this.getEventHistories();
       } catch (e) {
         console.error(e);
-        this.events = [];
+        this.events = {};
       }
     },
     async refreshWorkingStats (params) {

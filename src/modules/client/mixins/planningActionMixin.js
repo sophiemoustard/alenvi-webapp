@@ -3,7 +3,6 @@ import omit from 'lodash/omit';
 import get from 'lodash/get';
 import pick from 'lodash/pick';
 import pickBy from 'lodash/pickBy';
-import cloneDeep from 'lodash/cloneDeep';
 import { required, requiredIf } from 'vuelidate/lib/validators';
 import { subject } from '@casl/ability';
 import InternalHours from '@api/InternalHours';
@@ -154,9 +153,7 @@ export const planningActionMixin = {
           (!contract.endDate || moment(contract.endDate).isAfter(startDate)));
     },
     getRowEvents (rowId) {
-      const rowEvents = this.events.find(group => group._id === rowId);
-
-      return (!rowEvents || !rowEvents.events) ? [] : rowEvents.events;
+      return this.events[rowId] || [];
     },
     // Event creation
     canCreateEvent (person, selectedDay) {
@@ -334,20 +331,8 @@ export const planningActionMixin = {
       this.editionModal = true;
     },
     formatEditedEvent (event) {
-      const {
-        createdAt,
-        updatedAt,
-        startDate,
-        endDate,
-        isBilled,
-        auxiliary,
-        subscription,
-        address,
-        customer,
-        internalHour,
-        sector,
-        ...eventData
-      } = cloneDeep(event);
+      const { startDate, endDate, isBilled, auxiliary, subscription, address, customer, internalHour, sector } = event;
+      const eventData = omit(event, ['createdAt', 'updatedAt']);
       const dates = { startDate, endDate };
 
       switch (event.type) {

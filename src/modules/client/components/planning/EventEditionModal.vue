@@ -80,7 +80,7 @@
               :error="validations.cancel.reason.$error" @input="update($event, 'cancel.reason')" />
           </div>
         </template>
-        <div class="q-mb-lg hidden">
+        <div class="q-mb-lg">
           <div class="flex-row items-center justify-between">
             <div class="flex-row">
               <q-icon size="sm" name="history" class="q-mr-sm" color="grey-400" />

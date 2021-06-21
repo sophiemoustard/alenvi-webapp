@@ -138,7 +138,7 @@ export default {
   },
   props: {
     workingStats: { type: Object, default: () => ({}) },
-    events: { type: Array, default: () => [] },
+    events: { type: Object, default: () => ({}) },
     persons: { type: Array, default: () => [] },
     filteredSectors: { type: Array, default: () => [] },
     personKey: { type: String, default: 'auxiliary' },
@@ -250,9 +250,7 @@ export default {
       return total / 60;
     },
     getRowEvents (rowId) {
-      const rowEvents = this.events.find(group => group._id === rowId);
-
-      return (!rowEvents || !rowEvents.events) ? [] : rowEvents.events;
+      return this.events[rowId] || [];
     },
     getCellEvents (cellId, day) {
       return this.getRowEvents(cellId)
