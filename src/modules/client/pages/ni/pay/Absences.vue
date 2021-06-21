@@ -44,7 +44,7 @@ import DateRange from '@components/form/DateRange';
 import TitleHeader from '@components/TitleHeader';
 import SimpleTable from '@components/table/SimpleTable';
 import { NotifyWarning } from '@components/popup/notify';
-import { formatIdentity, formatHours } from '@helpers/utils';
+import { formatIdentity, formatHours, formatHoursWithMinutes } from '@helpers/utils';
 import moment from '@helpers/moment';
 import { formatDate } from '@helpers/date';
 import { ABSENCE, ABSENCE_NATURES, ABSENCE_TYPES, DAILY, AUXILIARY } from '@data/constants';
@@ -64,7 +64,6 @@ export default {
   data () {
     return {
       personKey: AUXILIARY,
-      events: [],
       loading: false,
       tableLoading: false,
       absences: [],
@@ -106,7 +105,7 @@ export default {
           name: 'startHour',
           label: 'Heure de début',
           field: 'startDate',
-          format: value => moment(value).format('HH:mm'),
+          format: formatHoursWithMinutes,
           align: 'center',
         },
         {
@@ -117,19 +116,8 @@ export default {
           align: 'center',
           sortable: true,
         },
-        {
-          name: 'endHour',
-          label: 'Heure de fin',
-          field: 'endDate',
-          format: value => moment(value).format('HH:mm'),
-          align: 'center',
-        },
-        {
-          name: 'duration',
-          label: 'Durée',
-          field: row => this.getAbsenceDuration(row),
-          align: 'center',
-        },
+        { name: 'endHour', label: 'Heure de fin', field: 'endDate', format: formatHoursWithMinutes, align: 'center' },
+        { name: 'duration', label: 'Durée', field: this.getAbsenceDuration, align: 'center' },
         {
           name: 'type',
           label: 'Type',
